@@ -37,15 +37,24 @@ install(TARGETS run_mgr
         DESTINATION lib/${PROJECT_NAME})
 
 if (BUILD_TESTING)
-    find_package(ament_lint_auto REQUIRED)
-    # the following line skips the linter which checks for copyrights
-    # comment the line when a copyright and license is added to all source files
-    # set(ament_cmake_copyright_FOUND TRUE)
-    # the following line skips cpplint (only works in a git repo)
-    # comment the line when this package is in a git repo and when
-    # a copyright and license is added to all source files
-    set(ament_cmake_cpplint_FOUND TRUE)
-    ament_lint_auto_find_test_dependencies()
+    # Manually invoke clang format so it actually uses our file
+    find_package(ament_cmake_clang_format REQUIRED)
+    ament_clang_format(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/.clang-format)
+
+    find_package(ament_cmake_gtest REQUIRED)
+
+    # Add unit tests
+    ament_add_gtest(${PROJECT_NAME}-test
+            tests/unit.cpp
+            src/run_mgr_node.cpp
+            )
+    ament_target_dependencies(${PROJECT_NAME}-test ${dependencies})
+    target_include_directories(${PROJECT_NAME}-test PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+            )
+    # Copy testing images over
+    file(COPY tests/test_assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif ()
 
 ament_package()

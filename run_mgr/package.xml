@@ -3,9 +3,9 @@
 <package format="3">
   <name>run_mgr</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="Andrew@Ealovega.dev">andy</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Project Phoenix automated data collection per-run management node</description>
+  <maintainer email="Andrew@Ealovega.dev">Andrew Ealovega</maintainer>
+  <license>MIT</license>
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>

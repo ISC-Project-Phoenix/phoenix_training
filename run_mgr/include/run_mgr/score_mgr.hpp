@@ -85,7 +85,7 @@ public:
         double perc_in_bounds = (double)cv::countNonZero(perc) / (double)(perc.total());
 
         // Find percent of finish line color in image (#d2e552)
-        cv::inRange(img, cv::Scalar(170, 186, 61), cv::Scalar(170, 187, 61), mask);
+        cv::inRange(img, cv::Scalar(61, 186, 170), cv::Scalar(61, 187, 170), mask);
         cv::bitwise_and(img, img, perc, mask);
 
         cv::cvtColor(perc, perc, cv::COLOR_BGR2GRAY);

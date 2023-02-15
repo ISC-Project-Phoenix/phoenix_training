@@ -10,6 +10,7 @@ rm::RunMgrNode::RunMgrNode(const rclcpp::NodeOptions& options) : Node("run_mgr",
     this->run_folder_sub = this->create_subscription<std_msgs::msg::String>(
         "/run_folder", rclcpp::QoS(1).reliable().transient_local(), [this](std_msgs::msg::String::SharedPtr str) {
             this->score_file_path = std::filesystem::path{str->data} / "score.txt";
+            RCLCPP_INFO(this->get_logger(), "Set score file path to: %s", this->score_file_path->c_str());
         });
 
     this->score_img_sub = this->create_subscription<sensor_msgs::msg::Image>(
@@ -22,7 +23,7 @@ rm::RunMgrNode::RunMgrNode(const rclcpp::NodeOptions& options) : Node("run_mgr",
 }
 
 void rm::RunMgrNode::img_rcv_handler(sensor_msgs::msg::Image::SharedPtr img) {
-    // On first image received, create a timer that lower score over time. This serves as a way to not decrease the score until sim is up
+    // On first image received, create a timer that lowers score over time. This serves as a way to not decrease the score until sim is up
     static bool first_img = true;
     if (first_img) {
         RCLCPP_INFO(this->get_logger(), "Detected sim up, starting score timer...");
@@ -30,8 +31,8 @@ void rm::RunMgrNode::img_rcv_handler(sensor_msgs::msg::Image::SharedPtr img) {
         first_img = false;
     }
 
-    // Use mat as read only to zero copy images
-    const auto cv_img = cv_bridge::toCvShare(img);
+    // Force bgr8 since gazebo gives rgb8 for some reason
+    const auto cv_img = cv_bridge::toCvShare(img, "bgr8");
     const auto mat = cv_img->image;
 
     // Take action on score depending on our state
@@ -56,6 +57,7 @@ void rm::RunMgrNode::img_rcv_handler(sensor_msgs::msg::Image::SharedPtr img) {
         this->finish_run(final_score);
     }
 }
+
 void rm::RunMgrNode::finish_run(uint16_t final_score) {
     // Write final score to file
     if (!this->score_file_path.has_value()) {
