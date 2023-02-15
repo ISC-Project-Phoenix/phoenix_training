@@ -1,6 +1,7 @@
 #pragma once
 #include "cstdint"
-#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/opencv.hpp"
 #include "rclcpp/time.hpp"
 
 namespace rm {
@@ -26,7 +27,7 @@ public:
 };
 
 class BasicScoreMgr : public IScoreMgr {
-    uint16_t score;
+    uint16_t score = 1000;
     std::shared_mutex mut;
 
     static uint16_t sat_add(uint16_t a, uint16_t b) {
@@ -65,14 +66,39 @@ public:
 
     uint16_t out_of_bounds(rclcpp::Time) override {
         std::unique_lock lk{mut};
-        this->score = sat_sub(this->score, 100);
+        this->score = sat_sub(this->score, 10);
 
         return this->score;
     }
 
     [[nodiscard]] State determine_state(const cv::Mat& img) override {
-        //TODO analise for colors
-        return State::OutOfBounds;
+        auto mask = cv::Mat{};
+        auto perc = cv::Mat{};
+
+        // Find percent of in bounds color in image (#d800ff)
+        cv::inRange(img, cv::Scalar(100, 0, 100), cv::Scalar(255, 100, 216), mask);
+        cv::bitwise_and(img, img, perc, mask);
+
+        // mask is already white, but we need to reduce channels manually
+        cv::cvtColor(perc, perc, cv::COLOR_BGR2GRAY);
+
+        double perc_in_bounds = (double)cv::countNonZero(perc) / (double)(perc.total());
+
+        // Find percent of finish line color in image (#d2e552)
+        cv::inRange(img, cv::Scalar(170, 186, 61), cv::Scalar(170, 187, 61), mask);
+        cv::bitwise_and(img, img, perc, mask);
+
+        cv::cvtColor(perc, perc, cv::COLOR_BGR2GRAY);
+
+        double perc_finish = (double)cv::countNonZero(perc) / (double)(perc.total());
+
+        if (perc_finish > 0.8) {
+            return State::FinishLine;
+        } else if (perc_in_bounds > 0.8) {
+            return State::InBounds;
+        } else {
+            return State::OutOfBounds;
+        }
     }
 
     virtual ~BasicScoreMgr() = default;
