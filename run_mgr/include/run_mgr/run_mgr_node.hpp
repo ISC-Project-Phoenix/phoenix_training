@@ -25,9 +25,15 @@ class RunMgrNode : public rclcpp::Node {
     /// Path to score file we will write. None until we receive a message from /run_folder
     std::optional<std::filesystem::path> score_file_path;
 
+    /// Timer that ticks down score each second
+    rclcpp::TimerBase::SharedPtr timer;
+
 public:
     RunMgrNode(const rclcpp::NodeOptions& options);
 
     void img_rcv_handler(sensor_msgs::msg::Image::SharedPtr img);
+
+    /// Performs end of run actions
+    void finish_run(uint16_t final_score);
 };
 }  // namespace rm
