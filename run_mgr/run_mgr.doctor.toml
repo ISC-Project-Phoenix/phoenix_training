@@ -1,0 +1,28 @@
+#ROS package you are documenting
+package_name = "phoenix_training"
+repo = "https://github.com/ISC-Project-Phoenix/phoenix_training"
+
+#You can have multiple nodes in one package
+[[nodes]]
+node_name = 'run_mgr'
+#Relitive to this file
+source_file = ['./src/run_mgr.cpp']
+summary = '''
+Manages the per-run state of phoenix training. This involves collecting the score, as well as ending the run.
+
+Score is currently collected by viewing a colored mask via a camera in gazebo.
+'''
+
+#Your published topics (optional)
+[[nodes.publishes]]
+name = '/order_66'
+description = 'Published to when run is done. This occurs when the score is zero, or the finish line is seen. Contains the runs score.'
+
+#Your subscribed topics (optional)
+[[nodes.subscribes]]
+name = '/run_folder'
+description = 'Folder to write the final score.txt to. This must be published to before the end of the run.'
+
+[[nodes.subscribes]]
+name = '/camera/score/rgb'
+description = 'Camera viewing the good areas mask.'
