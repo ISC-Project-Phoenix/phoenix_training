@@ -23,7 +23,7 @@ class DataManager():
         for name, score in runs:
             if score < mean - 2 * std_dev:
                 if self.logger is not None:
-                    self.logger.info(f'Run {run[0]} is being trimmed. Score is {run[1]}')
+                    self.logger.info(f'Run {name} is being trimmed. Score is {score}')
             else:
                 data_folders[name] = score
         return data_folders
