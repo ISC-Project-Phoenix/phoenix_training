@@ -20,13 +20,12 @@ class DataManager():
         mean = fmean(runs.values)
         std_dev = stdev(runs.values)
         data_folders = {}
-        for run in runs:
-            # run[1] is the runs score, so check if it meets requirements, if it does add it to the data_folders dict
-            if run[1] < mean - 2 * std_dev:
+        for name, score in runs:
+            if score < mean - 2 * std_dev:
                 if self.logger is not None:
                     self.logger.info(f'Run {run[0]} is being trimmed. Score is {run[1]}')
             else:
-                data_folders[run[0]] = run[1]
+                data_folders[name] = score
         return data_folders
             
     
