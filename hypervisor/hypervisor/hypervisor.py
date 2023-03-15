@@ -2,20 +2,45 @@ import rclpy
 from rclpy import Node
 import os
 import subprocess
+import time
 import shutil
 import glob
+from pathlib import Path
 import pandas as pd
 from statistics import fmean, stdev
+from neural_net.train import train
+from neural_net.config import Config
 
 from std_msgs.msg import UInt16, String
 
 
 class TrainingManager():
-    def __init__(self):
-        pass
+    def __init__(self, logger=None) -> None:
+        self._config = Config.neural_net
+        self._logger = logger
+
+    def train_ai(self, data_folder: str) -> str:
+        # Must return path to the trained model (h5 and json)
+        train(data_folder)
+        self._model_name = "training_data" + Config.neural_net_yaml_name + '_N' + str(self._config['network_type'])
+        if not Path(self._model_name + '.json').exists() or not Path(self._model_name + '.h5').exists():
+            if self._logger is not None:
+                self._logger.fatal('JSON/h5 not found!')
+            exit(-1)
+        os.makedirs('models', exist_ok=True)
+        dst_folder = 'models/' + str(time.time())
+        shutil.move(self._model_name + '.json', dst_folder)
+        shutil.move(self._model_name + '.h5', dst_folder)
+        return dst_folder
+
+
+
 
 
 class DataManager():
+    ''' TODO
+        - Add logging so trimmed data is logged to a file we can easily view instead of just logging to console
+    '''
     def stddev(self, runs: dict) -> dict:
         mean = fmean(runs.values)
         std_dev = stdev(runs.values)
@@ -28,17 +53,7 @@ class DataManager():
                 data_folders[name] = score
         return data_folders
             
-    
     '''
-    This class will handle the data related to the neural network. 
-
-    At the end of every data collection loop, this class will take the runs dictionary, and determine which runs will be used for the neural network training
-    The runs dictionary contains the score, where the keys are the names of the folder where the run data is saved. If the score of the run is less then 
-    two standard deviations from the mean, the run should be trimmed and not included in the training data set. The method of trimming, in this case the 2 std dev,
-    should utilize a ROS parameter that decides which trimming method is used. This will allow us to easily use a different trimming method just by changing the
-    ros parameter. Once we have determined which runs can be used for training, we need to put the images into a folder located in tmp and combine the csv files
-    into one csv file and place this in the same folder as the images. This folder is the data folder for the AI to train on. 
-
     FOR ALTERNATE TRIMMING METHODS, WE MUST DEFINE THE METHOD ABOVE, THEN ADD AN ENTRY TO THE TRIMMING METHODS DICT. ALL TRIMMING METHODS SHOULD RETURN A DICT WITH THE
     RUNS TO BE TRAINED ON
     '''
@@ -56,12 +71,7 @@ class DataManager():
     
 
     def trim_data(self, runs: dict):
-        '''
-        Need to determine if the training folder created in tmp should be overwritten with new data or not. Assuming yes for now.
-        '''
         data = self.trimming_methods[self._trim_method](runs)
-        # Temp line for intellisense to work
-        data = self.stddev(runs)
         
         if os.path.isdir('/tmp/training_data/'):
             shutil.rmtree('/tmp/training_data/')
@@ -69,7 +79,8 @@ class DataManager():
             os.makedirs('/tmp/training_data/')
         except FileExistsError:
             if self.logger is not None:
-                self.logger.warning('Unable to create new training data folder in tmp. Folder already exists!')
+                self.logger.fatal('Unable to create new training data folder in tmp. Folder already exists!')
+            exit(-1)
 
         csv_files = []
         for path, score in data.items:
@@ -84,9 +95,9 @@ class DataManager():
             csv_files.append(glob.glob('*.csv', root_dir=path))
         
         csv_concat = pd.concat([pd.read_csv(file) for file in csv_files], ignore_index=True)
-        csv_concat.to_csv('/tmp/training_data/images.csv', index=False)
+        csv_concat.to_csv('/tmp/training_data/training_data.csv', index=False)
         if self.logger is not None:
-            self.logger.info("CSV files have been concatanated and written to /tmp/training_data/images.csv")
+            self.logger.info("CSV files have been concatanated and written to /tmp/training_data/training_data.csv")
 
 
 class HypervisorNode(Node):
@@ -140,6 +151,7 @@ class HypervisorNode(Node):
         trim = self.declare_parameter('trim_method')
 
         self.data_manager = DataManager(trim, self.get_logger())
+        self.training_manager = TrainingManager(self.get_logger())
 
         if not self.testing:
             # Start the first data collection, the rest will be handled in callbacks
@@ -170,7 +182,7 @@ class HypervisorNode(Node):
         else:
             # Commented out lines below need to be replaced by function calls to the classes, need to save the new model path
             self.data_manager.trim_data(self.runs)
-            # self.model = self._train_model()
+            self.model = self.training_manager.train_ai('/tmp/training_data')
 
             avg_score = fmean(self.runs.values())
             if avg_score == self.average_score:
