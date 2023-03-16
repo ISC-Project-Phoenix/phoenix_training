@@ -22,6 +22,7 @@ class Config:
     if oscar_path is None:
         exit("ERROR: Config files not found")
 
+    oscar_path = str(oscar_path)
     config_name = oscar_path + '/config/' + 'config.yaml'
 
     with open(config_name) as file:
