@@ -160,9 +160,9 @@ class DriveTrain:
 
                 # if collected data is not cropped then crop here
                 # otherwise do not crop.
-                if Config.data_collection['crop'] is not True:
-                    image = image[Config.data_collection['image_crop_y1']:Config.data_collection['image_crop_y2'],
-                                  Config.data_collection['image_crop_x1']:Config.data_collection['image_crop_x2']]
+                #if Config.data_collection['crop'] is not True:
+                #    image = #image[Config.data_collection['image_crop_y1']:Config.data_collection['image_crop_y2']#,
+                #                  #Config.data_collection['image_crop_x1']:Config.data_collection['image_crop_x2']]
 
                 image = cv2.resize(image, 
                                     (config['input_image_width'],
