@@ -89,10 +89,10 @@ def generate_launch_description():
                               default_value='10.0',
                               description='Maximum throttle speed'),
         DeclareLaunchArgument('wheelbase',
-                              default_value='1.8',
+                              default_value='1.08',
                               description='Maximum throttle speed'),
         DeclareLaunchArgument('max_steering_rad',
-                              default_value='0.34',
+                              default_value='2.0',
                               description='Maximum wheel angle'),
 
         # Nodes
